@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Mini Serving</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+    <link rel="stylesheet" href="/static/css/style.css">
+  </head>
+
+  <body>
+    <div class="px-2 py-2 pt-md-2 pb-md-2 mx-auto text-center">
+      <h1 class="display-4">Mini MNIST Serving</h1>
+      <p class="lead">Test your Tensorflow MNIST model.</p>
+    </div>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-3 text-center">
+          <canvas id="canvas" width="224px" height="224px" style="border:1px solid #000000"></canvas>
+          <button id="clear-btn" type="button" class="btn-sm mt-2 btn-outline-primary">Clear</button>
+        </div>
+        <div class="col-lg-5">
+          <div class="row">
+            <div class="col-lg-6 text-center">
+              <div class="card mb-3">
+                <div class="card-header">
+                Current Model
+                </div>
+                <div class="card-body">
+                  <div class="mb-2">
+                    {{if .ProdModelReady}}
+                    <button id="deploy-cur-model-btn" type="button" class="btn-sm btn-info" data-toggle="modal" data-target="#modal-deploy-model" data-kind="old">
+                        Re-Deploy
+                    </button>
+                    {{- else}}
+                    <button id="deploy-cur-model-btn" type="button" class="btn-sm btn-primary" data-toggle="modal" data-target="#modal-deploy-model" data-kind="old">
+                        Deploy
+                    </button> 
+                    {{- end}}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-6 text-center">
+              <div class="card mb-3">
+                <div class="card-header">
+                New Model
+                </div>
+                <div class="card-body">
+                  <div class="mb-2">
+                    {{if .CanaryModelReady}}
+                    <button id="deploy-new-model-btn" type="button" class="btn-sm btn-info" data-toggle="modal" data-target="#modal-deploy-model" data-kind="new">
+                        Re-Deploy
+                    </button>
+                    {{- else}}
+                    <button id="deploy-new-model-btn" type="button" class="btn-sm btn-primary" data-toggle="modal" data-target="#modal-deploy-model" data-kind="new">
+                        Deploy
+                    </button> 
+                    {{- end}}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card mb-3">
+            <div class="card-header">
+              Strategy
+            </div>
+            <div class="card-body">
+              <div class="mt-2 row">
+                <div class="col-lg-7">
+                  <div class="form-check">
+                    {{if .ProdModelReady}}
+                    <input class="form-check-input" type="radio" name="predict-radio-options" id="cur-model-only-btn" value="option1" checked>
+                    {{- else}}
+                    <input class="form-check-input" type="radio" name="predict-radio-options" id="cur-model-only-btn" value="option1" checked disabled>
+                    {{- end}}
+                    <label class="form-check-label" for="cur-model-only-btn">Current Model Only</label>
+                  </div>
+                  <div class="form-check">
+                    {{if .CanaryModelReady}}
+                    <input class="form-check-input" type="radio" name="predict-radio-options" id="new-model-only-btn" value="option2">
+                    {{- else}}
+                    <input class="form-check-input" type="radio" name="predict-radio-options" id="new-model-only-btn" value="option2" disabled>
+                    {{- end}}
+                    <label class="form-check-label" for="new-model-only-btn">New Model Only</label>
+                  </div>
+                  <div class="form-check">
+                    {{if and (.ProdModelReady) (.CanaryModelReady) }}
+                    <input class="form-check-input" type="radio" name="predict-radio-options" id="canary-btn" value="option3">
+                    <label class="form-check-label" for="canary-btn">Canary</label>
+                    <input type="range" class="form-control-range" value="20" min="1" max="99" id="canary-range" oninput="this.nextElementSibling.value = this.value.concat('% (New)')">
+                    <output id="canary-weight-text">20% (New)</output>
+                    {{- else}}
+                    <input class="form-check-input" type="radio" name="predict-radio-options" id="canary-btn" value="option3" disabled>
+                    <label class="form-check-label" for="canary-btn">Canary</label>
+                    <input type="range" class="form-control-range" value="20" min="1" max="99" id="canary-range" oninput="this.nextElementSibling.value = this.value.concat('% (New)')" disabled>
+                    <output id="canary-weight-text" hidden>20% (New)</output>
+                    {{- end}}
+                  </div>
+                </div>
+                <div class="col-lg-5">
+                  {{if or (.ProdModelReady) (.CanaryModelReady) }}
+                  <button id="set-strategy-btn" type="button" class="btn btn-primary mt-2">
+                    Set Strategy
+                  </button>
+                  {{- else}}
+                  <button id="set-strategy-btn" type="button" class="btn btn-primary mt-2" disabled>
+                    Set Strategy
+                  </button>
+                  {{- end}}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="text-center">
+            <div id="cur-strategy-text" class="mx-3" style="display: inline-block">
+              Strategy -
+              {{if (eq .CurrentStrategy 0)}}
+              Current Model Only
+              {{- else if (eq .CurrentStrategy 1)}}
+              New Model Only
+              {{- else if (eq .CurrentStrategy 2)}}
+              Canary
+              {{- else}}
+              None
+              {{- end}}
+            </div>
+            <div style="display: inline-block">
+              {{if or (.ProdModelReady) (.CanaryModelReady) }}
+              <button id="predict-btn" type="button" class="btn btn-primary mt-2">
+                Predict
+              </button>
+              {{- else}}
+              <button id="predict-btn" type="button" class="btn btn-primary mt-2" disabled>
+                Predict
+              </button>
+              {{- end}}
+            </div>
+            
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <canvas id="chart-canvas">
+          </canvas>
+        </div>
+      </div>
+    </div>
+
+    <canvas id="hidden-resized-canvas" style="display: none" width=28 height=28></canvas>
+
+    <div class="modal fade" id="modal-deploy-model" tabindex="-1" aria-labelledby="model-deploy-model-label" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modal-deploy-model-label">Deploy</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="modal-deploy-form">
+            <div class="form-group">
+                <label for="model-base-dir" class="col-form-label">GCS Model Base Directory:</label>
+                <input type="text" class="form-control" id="model-base-dir" pattern="gs://(.*)" name="model-base-dir">
+            </div>
+            <div class="form-group">
+                <label for="model-name" class="col-form-label">Model Name (Only "model" is supported):</label>
+                <input class="form-control" id="model-name" readonly value="model" name="model-name">
+            </div>
+            <div class="form-group">
+                <label for="num-replicas" class="col-form-label">Number of Replicas:</label>
+                <input type="number" min="1" class="form-control" id="num-replicas" name="num-replicas">
+            </div>
+            <div class="form-group">
+                <input type="hidden" class="form-control" id="is-new-model" readonly name="is-new-model">
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="modal-deploy-ok">OK</button>
+        </div>
+        </div>
+      </div>
+    </div>
+    <div></div>
+
+    <!-- jQuery and JS bundle w/ Popper.js -->
+    <script src="https://code.jquery.com/jquery-3.5.1.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
+    <!-- Fabric JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.1.0/fabric.min.js"></script>
+    <!-- Chart JS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
+    <!-- My script-->
+    <script src="/static/js/app.js"></script>
+  </body>
+
+</html>
