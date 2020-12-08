@@ -39,7 +39,7 @@ go run cmd\main.go \
 
 After the server started, you can access the web page via http://localhost:8080.
 
-![Web Page](https://user-images.githubusercontent.com/17065620/101507464-e940c080-39b9-11eb-9bed-ce6cab9a098f.png)
+![Web Page](https://user-images.githubusercontent.com/17065620/101513456-8e11cc80-39bf-11eb-8d96-4232de5fd34f.png)
 
 ## Deploy current / new models
 You can see "Deploy" buttons in both "Current Model" and "New Model" sections.
@@ -47,4 +47,26 @@ You can see "Deploy" buttons in both "Current Model" and "New Model" sections.
 Please set the Tensorflow model directory in your Google Cloud Storage (currently storage services other than GCS are not supported) and number of replicas (number of Pods) in the form.
 In the example below, the Tensorflow saved model should be located in "gs://my-bucket/mnist/model/1" directory.
 
-![Deploy model](https://user-images.githubusercontent.com/17065620/101508201-b814c000-39ba-11eb-976b-19b5c12520bf.png)
+![Deploy model](https://user-images.githubusercontent.com/17065620/101513549-a681e700-39bf-11eb-8be1-e6f37363c757.png)
+
+After the models are deployed, you can re-deploy or set strategy (Current model only / New model only / Canary) and predict your hand-written image.
+
+## Setting strategy
+You can set strategy using "Set Strategy" button. When you select "Canary", the portion of requests to be sent to your model can be adjusted by range bar.
+
+Depending on your strategy, the input data will be sent to the current model or new model.
+
+![Set strategy](https://user-images.githubusercontent.com/17065620/101514675-e09fb880-39c0-11eb-9b7e-6d155bff9c8c.png)
+
+## Run prediction
+After the strategy has been set, you can run prediction using your own hand-written image by clicking "Predict" button.
+
+![Prediction](https://user-images.githubusercontent.com/17065620/101514964-2d838f00-39c1-11eb-8612-73b398edf12a.png)
+
+You can check the result (probability) in a chart on the right side. Enjoy!
+
+## Caveats
+- TODO
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
